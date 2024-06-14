@@ -4,7 +4,7 @@ from pydub import AudioSegment
 from typing import Union
 
 def load_model():
-    # Whisper 모델 로드 (여기서 "large" 모델을 사용)
+    # Whisper large 모델 로드
     return whisper.load_model("large")
 
 def transcribe_audio(model, audio_file_path: str) -> Union[str, None]:
