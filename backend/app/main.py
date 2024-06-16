@@ -1,9 +1,12 @@
+# backend/app/main.py
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from app.stt import load_model, transcribe_audio
 from database import database, stt_table
 import os
+from datetime import datetime
 
 app = FastAPI()
 
@@ -51,6 +54,36 @@ async def speech_to_text(file: UploadFile = File(...)):
 
         # 파일을 절대 경로로 저장
         file_location = os.path.join(audio_dir, file.filename)
+        with open(file_location, "wb") as f:
+            f.write(await file.read())
+
+        # 음성 파일을 텍스트로 변환
+        transcription = transcribe_audio(model, file_location)
+
+        if transcription:
+            # 데이터베이스에 결과 저장
+            query = stt_table.insert().values(transcription=transcription)
+            await database.execute(query)
+
+            return JSONResponse(content={"text": transcription})
+        else:
+            raise HTTPException(status_code=500, detail="STT conversion failed.")
+
+    except Exception as e:
+        return JSONResponse(content={"error": f"An error occurred: {str(e)}"}, status_code=500)
+
+@app.post("/record/")
+async def record_audio(file: UploadFile = File(...)):
+    try:
+        if not file:
+            raise HTTPException(status_code=400, detail="No file uploaded")
+
+        # 타임스탬프를 사용하여 파일 이름 생성
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        file_name = f"recording_{timestamp}.mp3"
+        file_location = os.path.join(audio_dir, file_name)
+
+        # 파일 저장
         with open(file_location, "wb") as f:
             f.write(await file.read())
 
