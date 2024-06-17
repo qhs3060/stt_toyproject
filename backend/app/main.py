@@ -1,8 +1,9 @@
 # backend/app/main.py
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Body
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from app.stt import load_model, transcribe_audio
 from database import database, stt_table
 import os
@@ -99,6 +100,50 @@ async def record_audio(file: UploadFile = File(...)):
         else:
             raise HTTPException(status_code=500, detail="STT conversion failed.")
 
+    except Exception as e:
+        return JSONResponse(content={"error": f"An error occurred: {str(e)}"}, status_code=500)
+
+@app.post("/realtime_stt/")
+async def realtime_stt(file: UploadFile = File(...)):
+    try:
+        if not file:
+            raise HTTPException(status_code=400, detail="No file uploaded")
+
+        # 타임스탬프를 사용하여 파일 이름 생성
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        file_name = f"realtime_recording_{timestamp}.mp3"
+        file_location = os.path.join(audio_dir, file_name)
+
+        # 파일 저장
+        with open(file_location, "wb") as f:
+            f.write(await file.read())
+
+        # 음성 파일을 텍스트로 변환
+        transcription = transcribe_audio(model, file_location)
+
+        if transcription:
+            return JSONResponse(content={"text": transcription, "file_location": file_location})
+        else:
+            raise HTTPException(status_code=500, detail="STT conversion failed.")
+
+    except Exception as e:
+        return JSONResponse(content={"error": f"An error occurred: {str(e)}"}, status_code=500)
+
+class TranscriptionRequest(BaseModel):
+    transcription: str
+
+@app.post("/save_transcription/")
+async def save_transcription(request: TranscriptionRequest):
+    try:
+        transcription = request.transcription
+        if not transcription:
+            raise HTTPException(status_code=400, detail="No transcription provided")
+
+        # 데이터베이스에 결과 저장
+        query = stt_table.insert().values(transcription=transcription)
+        await database.execute(query)
+
+        return JSONResponse(content={"message": "Transcription saved successfully"})
     except Exception as e:
         return JSONResponse(content={"error": f"An error occurred: {str(e)}"}, status_code=500)
 
