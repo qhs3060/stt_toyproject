@@ -5,7 +5,7 @@ from typing import Union
 
 def load_model():
     # Whisper large 모델 로드
-    return whisper.load_model("large")
+    return whisper.load_model("base")
 
 def transcribe_audio(model, audio_file_path: str) -> Union[str, None]:
     try:
