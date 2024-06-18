@@ -95,7 +95,7 @@ const App: React.FC = () => {
           } />
           <Route path="/realtime" element={<RealTimeSTT />} />
           <Route path="/table2" element={<Table2Data />} />
-          <Route path="/table1/:pact_id" element={<Table1Data />} />
+          <Route path="/table1/:pactId" element={<Table1Data />} />
         </Routes>
       </Container>
     </Router>

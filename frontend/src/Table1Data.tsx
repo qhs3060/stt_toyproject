@@ -3,19 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper, 
-  CircularProgress, 
-  Typography 
-} from '@mui/material';
+import { Container, Typography, CircularProgress, Paper } from '@mui/material';
 
-interface Table1Data {
+interface Table1DataProps {
   pact_id: number;
   present_illness: string;
   medical_history: string;
@@ -46,57 +36,70 @@ interface Table1Data {
 }
 
 const Table1Data: React.FC = () => {
-  const { pact_id } = useParams<{ pact_id: string }>();
-  const [data, setData] = useState<Table1Data | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { pactId } = useParams<{ pactId: string }>();
+  const [data, setData] = useState<Table1DataProps | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`http://localhost:8000/table1/${pact_id}`);
-        setData(response.data.data[0]);  // 단일 행만 가져오므로 첫 번째 요소만 설정
+        const response = await axios.get(`http://localhost:8000/table1/${pactId}`);
+        console.log(response.data); // 데이터를 가져왔는지 확인하기 위해 콘솔에 출력
+        if (response.data && response.data.data.length > 0) {
+          setData(response.data.data[0]);
+        } else {
+          setData(null);
+        }
+        setLoading(false);
       } catch (error) {
         console.error("Error fetching table1 data:", error);
-      } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [pact_id]);
+  }, [pactId]);
 
   if (loading) {
     return <CircularProgress />;
   }
 
   if (!data) {
-    return <Typography variant="h6">No data found for pact_id: {pact_id}</Typography>;
+    return (
+      <Container>
+        <Typography variant="h4" gutterBottom>No data found for pact_id: {pactId}</Typography>
+      </Container>
+    );
   }
 
   return (
-    <div style={{ padding: "20px" }}>
-      <Typography variant="h4" gutterBottom>
-        Table1 Data for pact_id: {pact_id}
-      </Typography>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Field</TableCell>
-              <TableCell>Value</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {Object.entries(data).map(([key, value]) => (
-              <TableRow key={key}>
-                <TableCell>{key}</TableCell>
-                <TableCell>{String(value)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </div>
+    <Container>
+      <Typography variant="h4" gutterBottom>Table1 Data for pact_id: {pactId}</Typography>
+      <Paper style={{ padding: 20 }}>
+        <Typography variant="h5">Present illness</Typography>
+        <Typography variant="body1">{data.present_illness}</Typography>
+        
+        <Typography variant="h5" style={{ marginTop: 20 }}>Past medical history</Typography>
+        <Typography variant="body1">{data.medical_history}</Typography>
+
+        <Typography variant="h5" style={{ marginTop: 20 }}>Review of system</Typography>
+        <Typography variant="body1">Mental status: {data.symptom1 ? "Normal" : "Not Normal"}</Typography>
+        <Typography variant="body1">General condition: {data.symptom2 ? "Normal" : "Not Normal"}</Typography>
+
+        <Typography variant="h5" style={{ marginTop: 20 }}>Vital sign</Typography>
+        <Typography variant="body1">Vital sign 1: {data.vital_sign1}</Typography>
+        <Typography variant="body1">Vital sign 2: {data.vital_sign2}</Typography>
+
+        <Typography variant="h5" style={{ marginTop: 20 }}>Pain assessment</Typography>
+        <Typography variant="body1">Pain: {data.pain_assessment_pain}</Typography>
+        <Typography variant="body1">Category: {data.pain_assessment_category}</Typography>
+        <Typography variant="body1">Age: {data.pain_assessment_age}</Typography>
+        <Typography variant="body1">Tool: {data.pain_assessment_tool}</Typography>
+
+        <Typography variant="h5" style={{ marginTop: 20 }}>Care plan</Typography>
+        <Typography variant="body1">{data.care_plan}</Typography>
+      </Paper>
+    </Container>
   );
 };
 
