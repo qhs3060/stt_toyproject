@@ -1,6 +1,6 @@
 # backend/app/main.py
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Body, Query, Path
+from fastapi import FastAPI, UploadFile, File, HTTPException, Body, Query, Path, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -72,6 +72,54 @@ async def get_table1_data(pact_id: int = Path(...)):
         raise HTTPException(status_code=404, detail="No data found for the specified pact_id")
 
     return JSONResponse(content={"data": [dict(row) for row in rows]})
+
+# table1의 특정 pact_id에 해당하는 데이터를 업데이트하는 엔드포인트 추가
+@app.post("/table1/{pact_id}")
+async def update_table1_data(pact_id: int, request: Request):
+    data = await request.json()
+    print(f"Received data for pact_id {pact_id}: {data}")
+
+    # 데이터베이스 업데이트 쿼리 작성
+    query = """
+    UPDATE table1 SET
+        present_illness = :present_illness,
+        medical_history = :medical_history,
+        symptom1 = :symptom1,
+        symptom2 = :symptom2,
+        symptom3 = :symptom3,
+        symptom4 = :symptom4,
+        symptom5 = :symptom5,
+        symptom6 = :symptom6,
+        symptom7 = :symptom7,
+        symptom8 = :symptom8,
+        symptom9 = :symptom9,
+        symptom10 = :symptom10,
+        vital_sign1 = :vital_sign1,
+        vital_sign2 = :vital_sign2,
+        vital_sign3 = :vital_sign3,
+        vital_sign4 = :vital_sign4,
+        vital_sign5 = :vital_sign5,
+        vital_sign6 = :vital_sign6,
+        vital_sign7 = :vital_sign7,
+        vital_sign8 = :vital_sign8,
+        vital_sign9 = :vital_sign9,
+        pain_assessment_pain = :pain_assessment_pain,
+        pain_assessment_category = :pain_assessment_category,
+        pain_assessment_age = :pain_assessment_age,
+        pain_assessment_tool = :pain_assessment_tool,
+        care_plan = :care_plan
+    WHERE pact_id = :pact_id
+    """
+
+    values = {
+        "pact_id": pact_id,
+        **data  # data 딕셔너리의 모든 키와 값을 unpacking
+    }
+
+    # 데이터베이스 업데이트 실행
+    await database.execute(query=query, values=values)
+
+    return {"status": "success"}
 
 # 음성 파일 업로드와 비동기 STT 처리
 @app.post("/stt/")
